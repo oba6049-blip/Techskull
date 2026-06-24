@@ -43,10 +43,27 @@ interface UserSession {
 export default function App() {
   const [currentView, setCurrentView] = useState<ViewState>('home');
   const [session, setSession] = useState<UserSession | null>(null);
+  const [liveCourses, setLiveCourses] = useState<any[]>([]);
 
   // Automatically scroll to top on routing changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentView]);
+
+  // Fetch live courses list dynamically from DB
+  useEffect(() => {
+    const fetchLiveCourses = async () => {
+      try {
+        const response = await fetch('/api/courses');
+        if (response.ok) {
+          const list = await response.json();
+          setLiveCourses(list);
+        }
+      } catch (err) {
+        console.warn('Unable to load live courses catalog on home page:', err);
+      }
+    };
+    fetchLiveCourses();
   }, [currentView]);
 
   const handleAuthSuccess = (profile: UserSession) => {
@@ -193,10 +210,10 @@ export default function App() {
 
                   {/* 3 Featured Courses */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {POPULAR_COURSES.slice(0, 3).map((course) => (
+                    {(liveCourses.length > 0 ? liveCourses : POPULAR_COURSES).slice(0, 3).map((course) => (
                       <div key={course.id} className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
                         <div>
-                          <img src={course.image} alt={course.title} className="w-full h-48 object-cover" />
+                          <img src={course.image} alt={course.title} className="w-full h-48 object-cover" referrerPolicy="no-referrer" />
                           <div className="p-6 space-y-3">
                             <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#1E4F8A] px-2.5 py-1 rounded-md">
                               {course.category}
@@ -207,7 +224,7 @@ export default function App() {
                         </div>
                         <div className="p-6 pt-0 flex items-center justify-between text-xs font-semibold text-gray-500 border-t border-gray-50 mt-4">
                           <span>{course.duration}</span>
-                          <span className="text-[#41B883] font-bold">★ {course.rating}</span>
+                          <span className="text-[#41B883] font-bold">★ {Number(course.rating || 4.8).toFixed(1)}</span>
                         </div>
                       </div>
                     ))}
