@@ -1,0 +1,6 @@
+{
+  "name": "TechSkull Student Portal",
+  "description": "A modern, responsive, and professional landing page and interactive portal for university students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
