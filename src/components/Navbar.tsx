@@ -45,6 +45,8 @@ export default function Navbar({
     onNavigate(view);
   };
 
+  const isDarkHeader = currentView === 'home' && !isScrolled;
+
   return (
     <header
       id="main-header"
@@ -62,15 +64,17 @@ export default function Navbar({
             onClick={() => handleItemClick('home')}
             className="flex items-center space-x-2 cursor-pointer group"
           >
-            <div className="p-2 bg-[#13294B] rounded-xl text-[#41B883] transition-transform duration-300 group-hover:scale-105">
+            <div className="p-2 bg-[#13294B] border border-white/10 rounded-xl text-[#41B883] transition-transform duration-300 group-hover:scale-105">
               <GraduationCap className="w-6 h-6" />
             </div>
-            <span className="font-sans font-bold text-xl tracking-tight text-[#13294B] dark:text-white flex items-center gap-1">
+            <span className={`font-sans font-bold text-xl tracking-tight flex items-center gap-1 ${
+              isDarkHeader ? 'text-white' : 'text-[#13294B]'
+            } dark:text-white`}>
               Tech<span className="text-[#41B883]">Skull</span>
             </span>
           </div>
-
-          {/* Desktop Navigation */}
+ 
+           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const isActive = currentView === item.view;
@@ -79,7 +83,9 @@ export default function Navbar({
                   key={item.label}
                   onClick={() => handleItemClick(item.view)}
                   className={`px-4 py-2 text-sm font-semibold transition-colors relative ${
-                    isActive ? 'text-[#1E4F8A]' : 'text-gray-600 hover:text-[#1E4F8A]'
+                    isActive 
+                      ? isDarkHeader ? 'text-[#41B883]' : 'text-[#1E4F8A]'
+                      : isDarkHeader ? 'text-white/85 hover:text-white' : 'text-gray-600 hover:text-[#1E4F8A]'
                   }`}
                 >
                   {item.label}
@@ -94,8 +100,8 @@ export default function Navbar({
               );
             })}
           </nav>
-
-          {/* Action Buttons */}
+ 
+           {/* Action Buttons */}
           <div className="hidden sm:flex items-center space-x-3">
             {isLoggedIn ? (
               <div id="navbar-user-controls" className="flex items-center space-x-3">
@@ -104,14 +110,20 @@ export default function Navbar({
                   className={`flex items-center space-x-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     currentView === 'dashboard'
                       ? 'bg-[#13294B] text-white'
-                      : 'border border-gray-200 text-[#13294B] hover:bg-gray-50'
+                      : isDarkHeader
+                        ? 'border border-white/20 text-white hover:bg-white/10'
+                        : 'border border-gray-200 text-[#13294B] hover:bg-gray-50'
                   }`}
                 >
                   <LayoutDashboard className="w-4 h-4 text-accent" />
                   <span>{userRole === 'admin' ? 'Admin Console' : 'Dashboard'}</span>
                 </button>
-                <div className="h-6 w-[10px] bg-gray-200"></div>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100 font-bold">
+                <div className={`h-6 w-[1px] ${isDarkHeader ? 'bg-white/20' : 'bg-gray-200'}`}></div>
+                <div className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border font-bold ${
+                  isDarkHeader
+                    ? 'text-white bg-white/10 border-white/10'
+                    : 'text-gray-600 bg-gray-50 border-gray-100'
+                }`}>
                   <span className="font-medium max-w-[120px] truncate">{userName}</span>
                   {userRole === 'admin' && (
                     <span className="bg-red-50 text-red-700 font-extrabold text-[9px] uppercase px-1.5 py-0.5 rounded tracking-wider border border-red-100">
@@ -122,7 +134,11 @@ export default function Navbar({
                 <button
                   onClick={onLogout}
                   title="Logout"
-                  className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                  className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                    isDarkHeader
+                      ? 'text-white/60 hover:text-red-400 hover:bg-red-500/10'
+                      : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                  }`}
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -132,14 +148,20 @@ export default function Navbar({
                 <button
                   id="nav-login-btn"
                   onClick={() => onNavigate('login')}
-                  className="px-4 py-2 text-sm font-semibold text-[#13294B] hover:text-[#1E4F8A] transition-colors"
+                  className={`px-4 py-2 text-sm font-semibold transition-colors ${
+                    isDarkHeader ? 'text-white hover:text-[#41B883]' : 'text-[#13294B]'
+                  } hover:text-[#1E4F8A]`}
                 >
                   Login
                 </button>
                 <button
                   id="nav-register-btn"
                   onClick={() => onNavigate('register')}
-                  className="flex items-center space-x-1 px-5 py-2.5 bg-[#13294B] hover:bg-[#1E4F8A] text-white text-sm font-semibold rounded-xl tracking-wide shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                  className={`flex items-center space-x-1 px-5 py-2.5 text-sm font-semibold rounded-xl tracking-wide shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 ${
+                    isDarkHeader
+                      ? 'bg-[#41B883] hover:bg-[#38a373] text-[#13294B]'
+                      : 'bg-[#13294B] hover:bg-[#1E4F8A] text-white'
+                  }`}
                 >
                   <span>Register</span>
                   <ChevronRight className="w-4 h-4" />
@@ -147,8 +169,8 @@ export default function Navbar({
               </>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
+ 
+           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center space-x-3">
             {isLoggedIn && (
               <button
@@ -163,7 +185,9 @@ export default function Navbar({
             <button
               id="mobile-menu-toggle"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-gray-600 hover:text-[#13294B] focus:outline-none"
+              className={`p-2 focus:outline-none transition-colors ${
+                isDarkHeader ? 'text-white hover:text-[#41B883]' : 'text-gray-600 hover:text-[#13294B]'
+              }`}
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
