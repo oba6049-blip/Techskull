@@ -11,6 +11,7 @@ interface DatabaseContainer {
   users: any[];
   courses: any[];
   submissions: any[];
+  faculty: any[];
 }
 
 let client: MongoClient | null = null;
@@ -39,7 +40,30 @@ let fallbackDb: DatabaseContainer = {
     }
   ],
   courses: [],
-  submissions: []
+  submissions: [],
+  faculty: [
+    {
+      id: 'fac-1',
+      name: 'Dr. Evelyn Martinez',
+      role: 'Head of Computer Architecture',
+      bio: 'Former principal architect at Intel with 15+ years of researching secure chip design and software systems.',
+      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80'
+    },
+    {
+      id: 'fac-2',
+      name: 'Prof. Marcus Vance',
+      role: 'Director of Web Technologies',
+      bio: 'Ex-Staff Engineer at Vercel, active TC39 contributor, and author of several modern JavaScript compilation standards.',
+      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80'
+    },
+    {
+      id: 'fac-3',
+      name: 'Sarah Jenkins, MSc',
+      role: 'Lead Cloud Infrastructure Advisor',
+      bio: 'DevOps researcher and AWS Certified Solutions Architect, pioneering lightweight container compilation models.',
+      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80'
+    }
+  ]
 };
 
 // Try loading fallback database from disk if it exists
@@ -71,6 +95,10 @@ function loadFallback() {
           adminUser.role = 'admin';
           adminUser.password = 'subair@09';
           adminUser.name = "Adeyemi Faridah";
+        }
+        
+        if (!parsed.faculty) {
+          parsed.faculty = fallbackDb.faculty;
         }
         
         fallbackDb = parsed;
@@ -120,6 +148,7 @@ export async function connectToMongoDB() {
     const hasUsers = collections.some(c => c.name === 'users');
     const hasCourses = collections.some(c => c.name === 'courses');
     const hasSubmissions = collections.some(c => c.name === 'submissions');
+    const hasFaculty = collections.some(c => c.name === 'faculty');
 
     if (!hasUsers) {
       await db.collection('users').insertMany(fallbackDb.users);
@@ -141,6 +170,11 @@ export async function connectToMongoDB() {
           { email: 'adeyemifaridah23@gmail.com' },
           { $set: { role: 'admin', password: 'subair@09', name: "Adeyemi Faridah" } }
         );
+      }
+    }
+    if (!hasFaculty) {
+      if (fallbackDb.faculty.length > 0) {
+        await db.collection('faculty').insertMany(fallbackDb.faculty);
       }
     }
     if (!hasCourses) {
@@ -300,6 +334,36 @@ export const dbService = {
       return true;
     }
     await db.collection('users').deleteOne({ email: { $regex: new RegExp(`^${cleanEmail}$`, 'i') } });
+    return true;
+  },
+
+  async getFaculty() {
+    if (isMockMode || !db) {
+      return fallbackDb.faculty || [];
+    }
+    return await db.collection('faculty').find({}).toArray();
+  },
+
+  async createFaculty(member: any) {
+    if (isMockMode || !db) {
+      if (!fallbackDb.faculty) fallbackDb.faculty = [];
+      fallbackDb.faculty.push(member);
+      saveFallback();
+      return member;
+    }
+    await db.collection('faculty').insertOne(member);
+    return member;
+  },
+
+  async deleteFaculty(id: string) {
+    if (isMockMode || !db) {
+      if (fallbackDb.faculty) {
+        fallbackDb.faculty = fallbackDb.faculty.filter(f => f.id !== id);
+      }
+      saveFallback();
+      return true;
+    }
+    await db.collection('faculty').deleteOne({ id });
     return true;
   }
 };

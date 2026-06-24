@@ -1,29 +1,49 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Award, Shield, BookOpen, Sparkles, Code2, Users2, Cpu } from 'lucide-react';
 import HowItWorks from './HowItWorks';
 import StatsSection from './StatsSection';
 
+const DEFAULT_FACULTY = [
+  {
+    name: 'Dr. Evelyn Martinez',
+    role: 'Head of Computer Architecture',
+    bio: 'Former principal architect at Intel with 15+ years of researching secure chip design and software systems.',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Prof. Marcus Vance',
+    role: 'Director of Web Technologies',
+    bio: 'Ex-Staff Engineer at Vercel, active TC39 contributor, and author of several modern JavaScript compilation standards.',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80',
+  },
+  {
+    name: 'Sarah Jenkins, MSc',
+    role: 'Lead Cloud Infrastructure Advisor',
+    bio: 'DevOps researcher and AWS Certified Solutions Architect, pioneering lightweight container compilation models.',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
+  }
+];
+
 export default function AboutPage() {
-  const faculty = [
-    {
-      name: 'Dr. Evelyn Martinez',
-      role: 'Head of Computer Architecture',
-      bio: 'Former principal architect at Intel with 15+ years of researching secure chip design and software systems.',
-      avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
-    },
-    {
-      name: 'Prof. Marcus Vance',
-      role: 'Director of Web Technologies',
-      bio: 'Ex-Staff Engineer at Vercel, active TC39 contributor, and author of several modern JavaScript compilation standards.',
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80',
-    },
-    {
-      name: 'Sarah Jenkins, MSc',
-      role: 'Lead Cloud Infrastructure Advisor',
-      bio: 'DevOps researcher and AWS Certified Solutions Architect, pioneering lightweight container compilation models.',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80',
-    }
-  ];
+  const [faculty, setFaculty] = useState<any[]>(DEFAULT_FACULTY);
+
+  useEffect(() => {
+    const fetchFaculty = async () => {
+      try {
+        const response = await fetch('/api/faculty');
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setFaculty(data);
+          }
+        }
+      } catch (err) {
+        console.warn('Unable to load live faculty list:', err);
+      }
+    };
+    fetchFaculty();
+  }, []);
 
   const values = [
     {

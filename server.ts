@@ -142,18 +142,18 @@ async function bootstrap() {
       let user = await dbService.findUserByEmail(email);
       const userRole = (role as string) || 'student';
 
-      if (userRole === 'admin' && email.toLowerCase().trim() !== 'adeyemifaridah23@gmail.com') {
+      if (userRole === 'admin' && (!user || user.role !== 'admin')) {
         return res.send(`
           <html>
             <body class="bg-slate-50 flex items-center justify-center min-h-screen font-sans">
               <div style="text-align: center; padding: 40px; border-radius: 20px; background: white; border: 1px solid #EAEAEA; max-width: 400px; font-family: sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                 <h3 style="color: #EF4444; margin-bottom: 8px;">Access Denied</h3>
-                <p style="color: #666; font-size: 13px; line-height: 1.5;">Only adeyemifaridah23@gmail.com is authorized to access the system as an administrator.</p>
+                <p style="color: #666; font-size: 13px; line-height: 1.5;">This email is not authorized as an administrator on the system.</p>
                 <button onclick="window.close()" style="margin-top: 15px; padding: 8px 16px; background: #13294B; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">Close Window</button>
               </div>
               <script>
                 if (window.opener) {
-                  window.opener.postMessage({ type: 'GOOGLE_SSO_FAILURE', error: 'Only adeyemifaridah23@gmail.com is authorized to access the system as an administrator.' }, '*');
+                  window.opener.postMessage({ type: 'GOOGLE_SSO_FAILURE', error: 'This email is not authorized as an administrator on the system.' }, '*');
                 }
               </script>
             </body>
@@ -263,8 +263,8 @@ async function bootstrap() {
       let user = await dbService.findUserByEmail(email);
       const userRole = role || 'student';
 
-      if (userRole === 'admin' && email.toLowerCase().trim() !== 'adeyemifaridah23@gmail.com') {
-        return res.status(403).json({ error: 'Only adeyemifaridah23@gmail.com is authorized to access the system as an administrator.' });
+      if (userRole === 'admin' && (!user || user.role !== 'admin')) {
+        return res.status(403).json({ error: 'This email is not authorized to access the system as an administrator.' });
       }
       
       if (!user) {
@@ -325,11 +325,13 @@ async function bootstrap() {
 
     try {
       const cleanEmail = email.toLowerCase().trim();
-      if (role === 'admin' && cleanEmail !== 'adeyemifaridah23@gmail.com') {
-        return res.status(403).json({ error: 'Only adeyemifaridah23@gmail.com is authorized to register as an administrator.' });
-      }
-      if (role === 'admin' && password !== 'subair@09') {
-        return res.status(403).json({ error: 'The administrator account must be registered with the authorized secure password.' });
+      if (role === 'admin') {
+        if (cleanEmail !== 'adeyemifaridah23@gmail.com') {
+          return res.status(403).json({ error: 'Administrator accounts cannot self-register. They must be added by an existing administrator.' });
+        }
+        if (password !== 'subair@09') {
+          return res.status(403).json({ error: 'The primary administrator account must be registered with the authorized secure password.' });
+        }
       }
 
       const existingUser = await dbService.findUserByEmail(cleanEmail);
@@ -371,10 +373,6 @@ async function bootstrap() {
 
     try {
       const cleanEmail = email.toLowerCase().trim();
-      if (role === 'admin' && cleanEmail !== 'adeyemifaridah23@gmail.com') {
-        return res.status(403).json({ error: 'Only adeyemifaridah23@gmail.com can be authenticated as an administrator.' });
-      }
-
       const user = await dbService.findUserByEmail(cleanEmail);
       if (!user) {
         return res.status(400).json({ error: 'No matching user credentials found in registry.' });
@@ -386,8 +384,20 @@ async function bootstrap() {
 
       // Password comparison
       if (role === 'admin') {
-        if (password !== 'subair@09') {
-          return res.status(403).json({ error: 'Invalid admin security token entered.' });
+        // Special Case: First-time admin password setup check
+        if (user.needsPasswordSetup || !user.password) {
+          return res.json({ success: true, needsPasswordSetup: true, email: cleanEmail });
+        }
+
+        // Primary master admin fallback or custom passwords
+        if (cleanEmail === 'adeyemifaridah23@gmail.com') {
+          if (password !== 'subair@09' && password !== user.password) {
+            return res.status(403).json({ error: 'Invalid admin security token entered.' });
+          }
+        } else {
+          if (password !== user.password) {
+            return res.status(403).json({ error: 'Invalid admin security token entered.' });
+          }
         }
       } else if (password && user.password && user.password !== password) {
         return res.status(403).json({ error: 'Invalid passkey security token entered.' });
@@ -396,6 +406,38 @@ async function bootstrap() {
       res.json({ success: true, user });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Authentication backend database error.' });
+    }
+  });
+
+  // 4b. Setup admin password (First-time setup only)
+  app.post('/api/auth/setup-admin-password', async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and new password are required.' });
+    }
+
+    try {
+      const cleanEmail = email.toLowerCase().trim();
+      const user = await dbService.findUserByEmail(cleanEmail);
+      if (!user) {
+        return res.status(404).json({ error: 'No administrator profile found for this email.' });
+      }
+
+      if (user.role !== 'admin') {
+        return res.status(403).json({ error: 'This profile is not authorized as an administrator.' });
+      }
+
+      if (user.password && !user.needsPasswordSetup) {
+        return res.status(403).json({ error: 'This administrator account has already completed password registration.' });
+      }
+
+      // Update password and complete setup
+      await dbService.updateUser(cleanEmail, { password, needsPasswordSetup: false });
+      
+      const updatedUser = await dbService.findUserByEmail(cleanEmail);
+      res.json({ success: true, user: updatedUser });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to register administrator password.' });
     }
   });
 
@@ -645,6 +687,108 @@ async function bootstrap() {
     const { id } = req.params;
     try {
       await dbService.deleteCourse(id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 16. Get all faculty members
+  app.get('/api/faculty', async (req, res) => {
+    try {
+      const list = await dbService.getFaculty();
+      res.json(list);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 17. Add a faculty member (Admin)
+  app.post('/api/faculty', async (req, res) => {
+    const { name, role, bio, avatar } = req.body;
+    if (!name || !role || !bio) {
+      return res.status(400).json({ error: 'Name, role/title, and short biography are required.' });
+    }
+    try {
+      const newId = 'fac-' + Date.now();
+      const newlyCreated = {
+        id: newId,
+        name,
+        role,
+        bio,
+        avatar: avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80'
+      };
+      await dbService.createFaculty(newlyCreated);
+      res.json({ success: true, faculty: newlyCreated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 18. Delete a faculty member (Admin)
+  app.delete('/api/faculty/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      await dbService.deleteFaculty(id);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 19. Add another Admin (Admin only)
+  app.post('/api/admins', async (req, res) => {
+    const { name, email, department } = req.body;
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required to authorize a new administrator.' });
+    }
+
+    try {
+      const cleanEmail = email.toLowerCase().trim();
+      const existingUser = await dbService.findUserByEmail(cleanEmail);
+      if (existingUser) {
+        return res.status(400).json({ error: 'This email is already registered in the system.' });
+      }
+
+      const randomNum = Math.floor(1000 + Math.random() * 9000);
+      const newAdmin = {
+        role: 'admin',
+        name,
+        email: cleanEmail,
+        password: '', // empty password triggers setup on first login
+        needsPasswordSetup: true,
+        employeeId: `ADM-2026-${randomNum}`,
+        department: department || 'Computer Science & Engineering',
+        createdAt: new Date().toISOString()
+      };
+
+      await dbService.createUser(newAdmin);
+      res.json({ success: true, admin: newAdmin });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Failed to create new administrator.' });
+    }
+  });
+
+  // 20. List all admins
+  app.get('/api/admins', async (req, res) => {
+    try {
+      const allUsers = await dbService.getUsers();
+      const admins = allUsers.filter((u: any) => u.role === 'admin');
+      res.json(admins);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 21. Delete an admin (Master admin adeyemifaridah23@gmail.com cannot be deleted)
+  app.delete('/api/admins/:email', async (req, res) => {
+    const { email } = req.params;
+    try {
+      const cleanEmail = email.toLowerCase().trim();
+      if (cleanEmail === 'adeyemifaridah23@gmail.com') {
+        return res.status(400).json({ error: 'The primary system administrator cannot be removed from the registry.' });
+      }
+      await dbService.deleteUser(cleanEmail);
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });

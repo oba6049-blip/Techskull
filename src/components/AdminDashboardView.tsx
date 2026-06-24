@@ -25,6 +25,7 @@ import {
   Trash2,
   Sliders,
   Award,
+  KeyRound,
   Globe,
   ExternalLink
 } from 'lucide-react';
@@ -84,8 +85,30 @@ export default function AdminDashboardView({
   const [selectedInspectStudent, setSelectedInspectStudent] = useState<StudentUser | null>(null);
 
   // Tab state - Exactly as requested
-  // Admin -> (Grade Student) | (View Total Students) | (Manage Courses) | (Manage Students)
-  const [activeTab, setActiveTab] = useState<'grade' | 'total-students' | 'courses' | 'students'>('grade');
+  // Admin -> (Grade Student) | (View Total Students) | (Manage Courses) | (Manage Students) | (Manage Staff & Faculty) | (Manage Administrators)
+  const [activeTab, setActiveTab] = useState<'grade' | 'total-students' | 'courses' | 'students' | 'faculty' | 'admins'>('grade');
+
+  // Administrators states
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [adminSearch, setAdminSearch] = useState('');
+  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminDept, setNewAdminDept] = useState('Computer Science & Engineering');
+  const [adminSuccessMsg, setAdminSuccessMsg] = useState('');
+  const [adminErrorMsg, setAdminErrorMsg] = useState('');
+  const [adminToDelete, setAdminToDelete] = useState<any | null>(null);
+
+  // Faculty management states
+  const [faculty, setFaculty] = useState<any[]>([]);
+  const [facultySearch, setFacultySearch] = useState('');
+  const [isAddingFaculty, setIsAddingFaculty] = useState(false);
+  const [newFacultyName, setNewFacultyName] = useState('');
+  const [newFacultyRole, setNewFacultyRole] = useState('');
+  const [newFacultyBio, setNewFacultyBio] = useState('');
+  const [newFacultyAvatar, setNewFacultyAvatar] = useState('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80');
+  const [facultySuccessMsg, setFacultySuccessMsg] = useState('');
+  const [facultyToDelete, setFacultyToDelete] = useState<any | null>(null);
 
   // Search filter states
   const [courseSearch, setCourseSearch] = useState('');
@@ -169,6 +192,26 @@ export default function AdminDashboardView({
     } catch (err) {
       console.warn('Failed to retrieve student roster lists:', err);
     }
+
+    try {
+      const res = await fetch('/api/faculty');
+      if (res.ok) {
+        const list = await res.json();
+        setFaculty(list);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch faculty list:', err);
+    }
+
+    try {
+      const res = await fetch('/api/admins');
+      if (res.ok) {
+        const list = await res.json();
+        setAdmins(list);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch administrators list:', err);
+    }
   };
 
   useEffect(() => {
@@ -237,6 +280,62 @@ export default function AdminDashboardView({
       console.error('Failed deleting course:', err);
     } finally {
       setCourseToDelete(null);
+    }
+  };
+
+  // Add Faculty handler
+  const handleAddNewFaculty = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!newFacultyName || !newFacultyRole || !newFacultyBio) return;
+
+    try {
+      const response = await fetch('/api/faculty', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newFacultyName,
+          role: newFacultyRole,
+          bio: newFacultyBio,
+          avatar: newFacultyAvatar
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add faculty member.');
+      }
+
+      setFaculty(prev => [data.faculty, ...prev]);
+      setNewFacultyName('');
+      setNewFacultyRole('');
+      setNewFacultyBio('');
+      setFacultySuccessMsg(`Successfully registered educator/staff "${data.faculty.name}".`);
+      setTimeout(() => setFacultySuccessMsg(''), 4500);
+      setIsAddingFaculty(false);
+    } catch (err: any) {
+      console.error('Faculty registration issue:', err);
+    }
+  };
+
+  // Delete Faculty handler
+  const confirmDeleteFaculty = async () => {
+    if (!facultyToDelete) return;
+    const facId = facultyToDelete.id;
+
+    try {
+      const response = await fetch(`/api/faculty/${facId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setFaculty(prev => prev.filter(f => f.id !== facId));
+        setFacultySuccessMsg(`Faculty member "${facultyToDelete.name}" successfully removed.`);
+        setTimeout(() => setFacultySuccessMsg(''), 4000);
+      } else {
+        throw new Error('Deletion failed.');
+      }
+    } catch (err: any) {
+      console.error('Failed deleting faculty:', err);
+    } finally {
+      setFacultyToDelete(null);
     }
   };
 
@@ -425,6 +524,75 @@ export default function AdminDashboardView({
     s.department.toLowerCase().includes(studentSearch.toLowerCase())
   );
 
+  const filteredFaculty = faculty.filter(f =>
+    (f.name || '').toLowerCase().includes(facultySearch.toLowerCase()) ||
+    (f.role || '').toLowerCase().includes(facultySearch.toLowerCase()) ||
+    (f.bio || '').toLowerCase().includes(facultySearch.toLowerCase())
+  );
+
+  const filteredAdmins = admins.filter(a =>
+    (a.name || '').toLowerCase().includes(adminSearch.toLowerCase()) ||
+    (a.email || '').toLowerCase().includes(adminSearch.toLowerCase()) ||
+    (a.department || '').toLowerCase().includes(adminSearch.toLowerCase())
+  );
+
+  const handleAddNewAdmin = async (e: FormEvent) => {
+    e.preventDefault();
+    setAdminErrorMsg('');
+    setAdminSuccessMsg('');
+    if (!newAdminEmail || !newAdminName) return;
+
+    try {
+      const response = await fetch('/api/admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newAdminName,
+          email: newAdminEmail,
+          department: newAdminDept
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to register administrator.');
+      }
+
+      setAdminSuccessMsg('New administrator pre-registered successfully!');
+      setNewAdminName('');
+      setNewAdminEmail('');
+      setIsAddingAdmin(false);
+      loadDataFromBackend();
+    } catch (err: any) {
+      setAdminErrorMsg(err.message || 'Error occurred during administrator creation.');
+    }
+  };
+
+  const handleDeleteAdmin = async (emailToDelete: string) => {
+    if (emailToDelete === 'adeyemifaridah23@should') {
+      alert('The primary administrator cannot be deleted.');
+      return;
+    }
+    if (emailToDelete === 'adeyemifaridah23@gmail.com') {
+      alert('The primary administrator cannot be deleted.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admins/${encodeURIComponent(emailToDelete)}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete administrator.');
+      }
+
+      setAdminToDelete(null);
+      loadDataFromBackend();
+    } catch (err: any) {
+      alert(err.message || 'Error deleting administrator.');
+    }
+  };
+
   // Statistics summaries
   const totalSubmissionsPendingCount = submittedAssignments.filter(s => s.status === 'Pending').length;
 
@@ -595,6 +763,32 @@ export default function AdminDashboardView({
             >
               <Sliders className="w-4 h-4 text-violet-600" />
               <span>Manage Students</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('faculty'); setSelectedInspectStudent(null); }}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'faculty'
+                  ? 'bg-white text-[#13294B] shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-[#13294B] hover:bg-white/50'
+              }`}
+              id="admin-tab-manage-faculty"
+            >
+              <Award className="w-4 h-4 text-amber-600" />
+              <span>Manage Staff & Faculty</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('admins'); setSelectedInspectStudent(null); }}
+              className={`flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'admins'
+                  ? 'bg-white text-[#13294B] shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-[#13294B] hover:bg-white/50'
+              }`}
+              id="admin-tab-manage-admins"
+            >
+              <ShieldCheck className="w-4 h-4 text-rose-600" />
+              <span>Manage Administrators</span>
             </button>
           </div>
 
@@ -1153,6 +1347,374 @@ export default function AdminDashboardView({
                 </motion.div>
               )}
 
+              {/* TAB 5: MANAGE STAFF & FACULTY */}
+              {activeTab === 'faculty' && (
+                <motion.div
+                  key="tab-pane-manage-faculty"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-6"
+                >
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-[#13294B]">Manage Faculty Advisory Board</h3>
+                      <p className="text-xs text-gray-500 font-medium">Add, review, and manage distinguished computer science researchers, educators, and staff.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                      <button
+                        onClick={() => setIsAddingFaculty(!isAddingFaculty)}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-[#13294B] hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
+                        id="admin-btn-add-faculty"
+                      >
+                        <UserPlus className="w-4.5 h-4.5 text-[#41B883]" />
+                        <span>{isAddingFaculty ? 'Close Form' : 'Add Educator / Staff'}</span>
+                      </button>
+
+                      <div className="relative w-full sm:w-64">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                          <Search className="w-4 h-4" />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Search faculty name or title..."
+                          value={facultySearch}
+                          onChange={(e) => setFacultySearch(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2.5 text-xs border border-gray-200 outline-none rounded-xl bg-slate-50 focus:bg-white transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {facultySuccessMsg && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center space-x-2">
+                      <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />
+                      <span>{facultySuccessMsg}</span>
+                    </div>
+                  )}
+
+                  {/* Toggleable Inline Form to Add Faculty */}
+                  <AnimatePresence>
+                    {isAddingFaculty && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden bg-slate-50/50 rounded-2xl border border-gray-150 p-5 space-y-4"
+                      >
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500">New Board Member Details</h4>
+                        <form onSubmit={handleAddNewFaculty} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-gray-600 uppercase">Full Name</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Prof. Jane Doe, PhD"
+                              value={newFacultyName}
+                              onChange={(e) => setNewFacultyName(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 outline-none rounded-xl text-xs bg-white"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-[11px] font-bold text-gray-600 uppercase">Academic Role / Title</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Lead Algorithms Instructor"
+                              value={newFacultyRole}
+                              onChange={(e) => setNewFacultyRole(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 outline-none rounded-xl text-xs bg-white"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[11px] font-bold text-gray-600 uppercase">Short Biography & Experience</label>
+                            <textarea
+                              required
+                              rows={3}
+                              placeholder="A summary of publications, previous experience at tech giants, or research fields..."
+                              value={newFacultyBio}
+                              onChange={(e) => setNewFacultyBio(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 outline-none rounded-xl text-xs bg-white resize-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[11px] font-bold text-gray-600 uppercase">Avatar / Headshot Image URL</label>
+                            <input
+                              type="url"
+                              placeholder="e.g. https://images.unsplash.com/photo-..."
+                              value={newFacultyAvatar}
+                              onChange={(e) => setNewFacultyAvatar(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 outline-none rounded-xl text-xs bg-white"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2 flex justify-end gap-2.5 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsAddingFaculty(false)}
+                              className="px-4 py-2 border border-gray-200 text-gray-600 text-xs font-bold rounded-xl hover:bg-slate-50 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-4 py-2 bg-emerald-650 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm"
+                            >
+                              Authorize Educator Listing
+                            </button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Faculty Board List Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredFaculty.length === 0 ? (
+                      <div className="col-span-full text-center p-12 text-gray-400 italic bg-slate-50/50 rounded-2xl border border-dashed border-gray-200">
+                        No registered faculty or educator records available.
+                      </div>
+                    ) : (
+                      filteredFaculty.map((member) => (
+                        <div key={member.id} className="bg-white rounded-3xl border border-gray-150 p-5 space-y-4 shadow-xs relative hover:shadow-md transition-shadow">
+                          <button
+                            type="button"
+                            onClick={() => setFacultyToDelete(member)}
+                            className="absolute top-4 right-4 p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all cursor-pointer"
+                            title="Remove Educator"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+
+                          <div className="flex items-center gap-3.5">
+                            <img
+                              referrerPolicy="no-referrer"
+                              src={member.avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80'}
+                              alt={member.name}
+                              className="w-12 h-12 rounded-full object-cover border border-gray-150"
+                            />
+                            <div>
+                              <h4 className="font-extrabold text-[#13294B] text-sm leading-tight">{member.name}</h4>
+                              <p className="text-[10px] text-amber-600 font-extrabold tracking-wider uppercase mt-0.5">{member.role}</p>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-gray-500 leading-relaxed font-medium line-clamp-4">
+                            {member.bio}
+                          </p>
+
+                          <div className="pt-2 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 font-mono">
+                            <span>ID: {member.id || 'N/A'}</span>
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full font-bold uppercase">Faculty Board</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'admins' && (
+                <motion.div
+                  key="tab-pane-manage-admins"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-6"
+                >
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <h3 className="text-xl font-bold text-[#13294B]">Manage System Administrators</h3>
+                      <p className="text-xs text-gray-500 font-medium">Add and manage administrative credentials with permission authorization levels.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                      <button
+                        onClick={() => {
+                          setIsAddingAdmin(!isAddingAdmin);
+                          setAdminSuccessMsg('');
+                          setAdminErrorMsg('');
+                        }}
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-[#13294B] hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
+                        id="admin-btn-add-admin"
+                      >
+                        <UserPlus className="w-4.5 h-4.5 text-[#41B883]" />
+                        <span>{isAddingAdmin ? 'Close Form' : 'Register New Admin'}</span>
+                      </button>
+
+                      <div className="relative w-full sm:w-64">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                          <Search className="w-4 h-4" />
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Search administrators..."
+                          value={adminSearch}
+                          onChange={(e) => setAdminSearch(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2.5 text-xs border border-gray-200 outline-none rounded-xl bg-slate-50 focus:bg-white transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {adminSuccessMsg && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                      <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />
+                      <span>{adminSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  {adminErrorMsg && (
+                    <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-xs font-semibold flex items-center space-x-2 animate-fade-in">
+                      <AlertCircle className="w-4.5 h-4.5 text-red-500" />
+                      <span>{adminErrorMsg}</span>
+                    </div>
+                  )}
+
+                  {/* Toggleable Inline Form to Add Administrator */}
+                  <AnimatePresence>
+                    {isAddingAdmin && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <form onSubmit={handleAddNewAdmin} className="bg-slate-50/70 p-6 rounded-2xl border border-gray-150 space-y-4">
+                          <h4 className="text-xs font-black uppercase tracking-wider text-[#13294B] flex items-center gap-1">
+                            <Sparkles className="w-4 h-4 text-[#41B883]" />
+                            <span>System Administrator Registration Form</span>
+                          </h4>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase text-gray-500 block">Full Registrar Name</label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. Dr. Sarah Jenkins"
+                                value={newAdminName}
+                                onChange={(e) => setNewAdminName(e.target.value)}
+                                className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white outline-none focus:ring-1 focus:ring-[#41B883]"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase text-gray-500 block">Administrative Email Address</label>
+                              <input
+                                type="email"
+                                required
+                                placeholder="e.g. sarah.j@techskull.edu"
+                                value={newAdminEmail}
+                                onChange={(e) => setNewAdminEmail(e.target.value)}
+                                className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white outline-none focus:ring-1 focus:ring-[#41B883]"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase text-gray-500 block">Authorized Division Department</label>
+                              <select
+                                value={newAdminDept}
+                                onChange={(e) => setNewAdminDept(e.target.value)}
+                                className="w-full px-4 py-2.5 text-xs border border-gray-200 rounded-xl bg-white outline-none focus:ring-1 focus:ring-[#41B883] appearance-none bg-no-repeat"
+                              >
+                                <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+                                <option value="Information Security">Information Security & Cyberops</option>
+                                <option value="Information Design & Human Experience">UI/UX Graphic Design</option>
+                                <option value="Advanced Neural Networks & Models">Artificial Intelligence & ML</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 bg-amber-50/50 rounded-xl border border-amber-150 text-[11px] text-amber-800 leading-relaxed font-semibold flex items-start gap-2.5">
+                            <KeyRound className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                            <span>
+                              <strong>First-Time Password Choice Instruction:</strong> Newly registered administrators will not have a preset password. When logging in for the first time, they will be prompt to create a new password automatically.
+                            </span>
+                          </div>
+
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAddingAdmin(false);
+                                setAdminSuccessMsg('');
+                                setAdminErrorMsg('');
+                              }}
+                              className="px-4 py-2 bg-transparent text-gray-500 hover:bg-gray-100 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              className="px-4 py-2 bg-[#13294B] hover:bg-slate-800 text-[#41B883] text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+                            >
+                              Pre-Register Administrator
+                            </button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {/* Administrators List Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredAdmins.length === 0 ? (
+                      <div className="col-span-full py-12 text-center text-gray-400 font-medium text-xs bg-slate-50 border border-dashed border-gray-200 rounded-3xl">
+                        No administrators matching query criteria found.
+                      </div>
+                    ) : (
+                      filteredAdmins.map((adm) => {
+                        const isPrimary = adm.email === 'adeyemifaridah23@gmail.com' || adm.email === 'adeyemifaridah23@should';
+                        return (
+                          <div 
+                            key={adm.email}
+                            className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4 hover:shadow-md transition-shadow relative"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-rose-50/70 text-rose-600 flex items-center justify-center shrink-0">
+                                  <ShieldCheck className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-extrabold text-[#13294B] text-sm leading-tight truncate">{adm.name}</h4>
+                                  <p className="text-[10px] text-gray-400 font-mono mt-0.5 truncate">{adm.email}</p>
+                                </div>
+                              </div>
+
+                              {!isPrimary && (
+                                <button
+                                  onClick={() => setAdminToDelete(adm)}
+                                  className="p-1.5 hover:bg-rose-50 text-gray-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                                  title="Revoke Administrative Access"
+                                >
+                                  <Trash2 className="w-4.5 h-4.5" />
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="pt-3 border-t border-gray-100 flex justify-between items-center text-[10px] text-gray-400 font-mono">
+                              <span className="font-semibold text-gray-500 uppercase truncate max-w-[150px]">{adm.department || 'Administration'}</span>
+                              {adm.needsPasswordSetup ? (
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-bold uppercase text-[9px] border border-amber-200 shrink-0">Pending Setup</span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-bold uppercase text-[9px] border border-emerald-200 shrink-0">Active</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
             </AnimatePresence>
           </div>
         </div>
@@ -1686,6 +2248,96 @@ export default function AdminDashboardView({
                   className="flex-1 py-2 text-xs font-bold text-white bg-red-650 hover:bg-red-700 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
                 >
                   Yes, Drop Student
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Custom Faculty Deletion Confirmation Modal */}
+        {facultyToDelete && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full border border-gray-150 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3 text-red-650">
+                <div className="p-2.5 bg-red-50 rounded-2xl">
+                  <Trash2 className="w-6 h-6 text-red-500 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-gray-900 text-sm">Remove Faculty Member?</h4>
+                  <p className="text-[10px] text-gray-400 font-bold tracking-wider uppercase font-mono">{facultyToDelete.id}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-gray-600 text-xs leading-relaxed">
+                  Are you sure you want to remove <span className="font-bold text-gray-800">"{facultyToDelete.name}"</span> from the Faculty Advisory Board? This will hide them from the About Us page.
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setFacultyToDelete(null)}
+                  className="flex-1 py-1 px-4 text-xs font-bold text-gray-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteFaculty}
+                  className="flex-1 py-1 px-4 text-xs font-bold text-white bg-red-650 hover:bg-red-700 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
+                >
+                  Yes, Remove
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Custom Administrator Deletion Confirmation Modal */}
+        {adminToDelete && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full border border-gray-150 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3 text-red-650">
+                <div className="p-2.5 bg-red-50 rounded-2xl">
+                  <Trash2 className="w-6 h-6 text-red-500 animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-gray-900 text-sm">Revoke Administrator?</h4>
+                  <p className="text-[10px] text-gray-400 font-bold tracking-wider uppercase font-mono">ADMIN ACCESS</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-gray-600 text-xs leading-relaxed">
+                  Are you sure you want to revoke administrative access for <span className="font-bold text-gray-800">"{adminToDelete.name}"</span> ({adminToDelete.email})? This user will no longer be able to log in to the administrative console.
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdminToDelete(null)}
+                  className="flex-1 py-1 px-4 text-xs font-bold text-gray-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteAdmin(adminToDelete.email)}
+                  className="flex-1 py-1 px-4 text-xs font-bold text-white bg-red-650 hover:bg-red-700 rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
+                >
+                  Yes, Revoke
                 </button>
               </div>
             </motion.div>
