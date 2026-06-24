@@ -230,31 +230,6 @@ export default function AuthView({ initialTab, onAuthSuccess, onCancel }: AuthVi
             </button>
           </div>
 
-          {/* Quick Demo Helpers Grid */}
-          <div className="mb-6 p-4 bg-[#1E4F8A]/5 border border-[#1E4F8A]/10 rounded-xl space-y-2 text-center">
-            <div className="flex items-center justify-center space-x-1.5 text-xs font-bold text-[#1E4F8A]">
-              <Sparkles className="w-4 h-4 text-[#41B883] animate-spin" />
-              <span>Developer Preview Shortcuts</span>
-            </div>
-            <p className="text-[11px] text-[#1E4F8A]/80 font-semibold mb-1">Bypass credential creation on the fly:</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleDemoStudentLogin}
-                className="px-3 py-2 bg-navy hover:bg-royal text-white text-3xs sm:text-2xs font-extrabold rounded-lg transition-all"
-              >
-                Load Student (Alex Mercer)
-              </button>
-              <button
-                type="button"
-                onClick={handleDemoAdminLogin}
-                className="px-3 py-2 bg-[#13294B] hover:bg-[#1E4F8A] text-[#41B883] border border-[#41B883]/30 text-3xs sm:text-2xs font-extrabold rounded-lg transition-all"
-              >
-                Load Admin (Charles Thorne)
-              </button>
-            </div>
-          </div>
-
           {/* Role Toggler Selection */}
           <div className="space-y-1 mb-5">
             <label className="text-[10px] font-bold text-[#13294B] block uppercase tracking-wider mb-1.5">Portal Authority Role</label>
@@ -466,11 +441,7 @@ export default function AuthView({ initialTab, onAuthSuccess, onCancel }: AuthVi
               Cancel & Return Home
             </button>
 
-            {/* Small security assurance footer */}
-            <div className="flex items-center justify-center space-x-1.5 text-[10px] text-gray-400 font-semibold pt-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <span>Full cryptographic OAuth & SAML sandbox protection enabled.</span>
-            </div>
+
           </form>
         </div>
 
