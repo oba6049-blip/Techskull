@@ -31,15 +31,21 @@ async function bootstrap() {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-    const rawProtocol = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
-    const rawHost = ((req.headers['x-forwarded-host'] as string) || req.headers.host || '').split(',')[0].trim();
-    
-    const isLocalhost = rawHost.includes('localhost') || rawHost.includes('127.0.0.1');
-    const protocol = isLocalhost ? (rawProtocol || 'http') : 'https';
-    const host = rawHost;
-    
-    const dynamicOrigin = `${protocol}://${host}`;
-    const dynamicCallbackUrl = `${dynamicOrigin}/api/auth/google/callback`;
+    let dynamicCallbackUrl = '';
+    if (process.env.APP_URL) {
+      const cleanAppUrl = process.env.APP_URL.replace(/\/$/, '');
+      dynamicCallbackUrl = `${cleanAppUrl}/api/auth/google/callback`;
+    } else {
+      const rawProtocol = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
+      const rawHost = ((req.headers['x-forwarded-host'] as string) || req.headers.host || '').split(',')[0].trim();
+      
+      const isLocalhost = rawHost.includes('localhost') || rawHost.includes('127.0.0.1');
+      const protocol = isLocalhost ? (rawProtocol || 'http') : 'https';
+      const host = rawHost;
+      
+      const dynamicOrigin = `${protocol}://${host}`;
+      dynamicCallbackUrl = `${dynamicOrigin}/api/auth/google/callback`;
+    }
 
     // Check if real credentials are not set or are default placeholders
     if (!clientId || clientId === 'google-client-id-here' || !clientSecret || clientSecret === 'google-client-secret-here') {
@@ -79,13 +85,19 @@ async function bootstrap() {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     
-    const rawProtocol = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
-    const rawHost = ((req.headers['x-forwarded-host'] as string) || req.headers.host || '').split(',')[0].trim();
-    
-    const isLocalhost = rawHost.includes('localhost') || rawHost.includes('127.0.0.1');
-    const protocol = isLocalhost ? (rawProtocol || 'http') : 'https';
-    const host = rawHost;
-    const redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+    let redirectUri = '';
+    if (process.env.APP_URL) {
+      const cleanAppUrl = process.env.APP_URL.replace(/\/$/, '');
+      redirectUri = `${cleanAppUrl}/api/auth/google/callback`;
+    } else {
+      const rawProtocol = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
+      const rawHost = ((req.headers['x-forwarded-host'] as string) || req.headers.host || '').split(',')[0].trim();
+      
+      const isLocalhost = rawHost.includes('localhost') || rawHost.includes('127.0.0.1');
+      const protocol = isLocalhost ? (rawProtocol || 'http') : 'https';
+      const host = rawHost;
+      redirectUri = `${protocol}://${host}/api/auth/google/callback`;
+    }
 
     try {
       // 1. Exchange authorization code for tokens
