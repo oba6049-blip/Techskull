@@ -8,13 +8,7 @@ interface CallToActionProps {
 
 export default function CallToAction({ onNavigate }: CallToActionProps) {
   const handleScrollToCourses = () => {
-    onNavigate('home');
-    setTimeout(() => {
-      const el = document.getElementById('courses');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
+    onNavigate('courses');
   };
 
   return (

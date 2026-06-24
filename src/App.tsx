@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import * as LucideIcons from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { ViewState } from './types';
+import { POPULAR_COURSES, FEATURES } from './data';
 
 // Components imports
 import Navbar from './components/Navbar';
@@ -17,6 +20,12 @@ import AuthView from './components/AuthView';
 import ContactSection from './components/ContactSection';
 import StudentDashboardView from './components/StudentDashboardView';
 import AdminDashboardView from './components/AdminDashboardView';
+
+// Multi-Page Views
+import AboutPage from './components/AboutPage';
+import FeaturesPage from './components/FeaturesPage';
+import TestimonialsPage from './components/TestimonialsPage';
+import ContactPage from './components/ContactPage';
 
 interface UserSession {
   role: 'student' | 'admin';
@@ -166,24 +175,182 @@ export default function App() {
             >
               <Hero onNavigate={(v) => setCurrentView(v)} />
               <StatsSection />
-              <FeaturesSection />
               
-              {/* Interactive Catalog Section */}
+              {/* Teaser Featured Programs Preview Grid */}
+              <section className="py-20 bg-gray-50 border-t border-b border-gray-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+                    <span className="text-xs font-bold text-[#1E4F8A] uppercase tracking-widest bg-[#1E4F8A]/10 px-4 py-1.5 rounded-full inline-block">
+                      Featured Programs
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-[#13294B] tracking-tight">
+                      Preview Our Academic Syllabus
+                    </h2>
+                    <p className="text-sm sm:text-base text-gray-600 font-normal">
+                      Acquire professional-grade engineering capabilities designed to level up your technology stack.
+                    </p>
+                  </div>
+
+                  {/* 3 Featured Courses */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {POPULAR_COURSES.slice(0, 3).map((course) => (
+                      <div key={course.id} className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div>
+                          <img src={course.image} alt={course.title} className="w-full h-48 object-cover" />
+                          <div className="p-6 space-y-3">
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#1E4F8A] px-2.5 py-1 rounded-md">
+                              {course.category}
+                            </span>
+                            <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{course.title}</h3>
+                            <p className="text-xs text-gray-500 font-normal leading-relaxed line-clamp-2">{course.description}</p>
+                          </div>
+                        </div>
+                        <div className="p-6 pt-0 flex items-center justify-between text-xs font-semibold text-gray-500 border-t border-gray-50 mt-4">
+                          <span>{course.duration}</span>
+                          <span className="text-[#41B883] font-bold">★ {course.rating}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-center mt-12">
+                    <button
+                      onClick={() => setCurrentView('courses')}
+                      className="inline-flex items-center space-x-2 px-8 py-4 bg-[#13294B] hover:bg-[#1E4F8A] text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    >
+                      <span>Explore All Academic Programs</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              {/* Teaser Portal Features Preview Section */}
+              <section className="py-20 bg-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+                    <span className="text-xs font-bold text-[#41B883] uppercase tracking-widest bg-[#41B883]/10 px-4 py-1.5 rounded-full inline-block">
+                      Next-Gen System
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-[#13294B] tracking-tight">
+                      LMS Dashboard Capabilities
+                    </h2>
+                    <p className="text-sm sm:text-base text-gray-600 font-normal">
+                      A modern student administration portal built with enterprise safety, real-time grades, and code submissions.
+                    </p>
+                  </div>
+
+                  {/* 3 Features */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {FEATURES.slice(0, 3).map((feat) => {
+                      const IconComponent = (LucideIcons as any)[feat.iconName] || LucideIcons.CheckCircle2;
+                      return (
+                        <div key={feat.id} className="bg-white p-8 rounded-2xl border border-gray-150/60 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+                          <div className="p-3 bg-gray-50 border border-gray-100 text-[#1E4F8A] w-12 h-12 rounded-xl flex items-center justify-center">
+                            <IconComponent className="w-6 h-6" />
+                          </div>
+                          <h3 className="font-bold text-lg text-gray-900">{feat.title}</h3>
+                          <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed">{feat.description}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="text-center mt-12">
+                    <button
+                      onClick={() => setCurrentView('features')}
+                      className="inline-flex items-center space-x-2 px-8 py-4 bg-transparent hover:bg-gray-50 text-[#13294B] border border-gray-250 font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                      <span>View All Portal Features</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <CallToAction onNavigate={(v) => setCurrentView(v)} />
+            </motion.div>
+          )}
+
+          {/* Dedicated Courses View */}
+          {currentView === 'courses' && (
+            <motion.div
+              key="courses-page"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-0 pt-20 sm:pt-28 animate-fade"
+            >
+              <div className="relative py-16 sm:py-24 overflow-hidden bg-gradient-to-b from-[#13294B]/5 via-white to-white border-b border-gray-100">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#1E4F8A]/5 rounded-full filter blur-3xl -z-10 pointer-events-none" />
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+                  <span className="inline-flex items-center space-x-2 bg-[#1E4F8A]/10 text-[#1E4F8A] px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Academic Programs Catalog</span>
+                  </span>
+                  <h1 className="text-4xl sm:text-5xl font-extrabold text-[#13294B] tracking-tight leading-tight max-w-3xl mx-auto">
+                    Acquire Practical <span className="bg-gradient-to-r from-[#1E4F8A] to-[#41B883] bg-clip-text text-transparent">Engineering Mastery</span>
+                  </h1>
+                  <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    Syllabus tracks reviewed by the academic senate, featuring live workspaces, automated GPA updates, and verifiable graduation badges.
+                  </p>
+                </div>
+              </div>
+
               <CoursesSection
                 onEnroll={handleEnrollCourse}
                 enrolledCourseIds={session?.role === 'student' ? (session.registeredCourses || []) : []}
                 isLoggedIn={!!session}
                 onNavigateToAuth={(tab) => setCurrentView(tab)}
               />
+            </motion.div>
+          )}
 
-              <HowItWorks />
-              <PortalFeatures />
-              <Testimonials />
-              
-              {/* Contact Inquiry Section */}
-              <ContactSection />
-              
-              <CallToAction onNavigate={(v) => setCurrentView(v)} />
+          {/* Dedicated About Page View */}
+          {currentView === 'about' && (
+            <motion.div
+              key="about-page"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <AboutPage />
+            </motion.div>
+          )}
+
+          {/* Dedicated Features Page View */}
+          {currentView === 'features' && (
+            <motion.div
+              key="features-page"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <FeaturesPage />
+            </motion.div>
+          )}
+
+          {/* Dedicated Testimonials Page View */}
+          {currentView === 'testimonials' && (
+            <motion.div
+              key="testimonials-page"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <TestimonialsPage />
+            </motion.div>
+          )}
+
+          {/* Dedicated Contact Page View */}
+          {currentView === 'contact' && (
+            <motion.div
+              key="contact-page"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <ContactPage />
             </motion.div>
           )}
 

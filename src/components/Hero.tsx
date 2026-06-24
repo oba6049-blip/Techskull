@@ -85,7 +85,7 @@ export default function Hero({ onNavigate }: HeroProps) {
 
               <button
                 id="hero-browse-courses-btn"
-                onClick={() => handleScrollTo('courses', 'home')}
+                onClick={() => onNavigate('courses')}
                 className="w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-4 bg-white hover:bg-gray-50 text-[#13294B] font-bold rounded-xl border border-gray-200/80 shadow-sm transition-all duration-300 hover:-translate-y-0.5"
               >
                 <span>Browse Courses</span>

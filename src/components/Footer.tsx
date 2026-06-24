@@ -6,30 +6,20 @@ interface FooterProps {
 }
 
 export default function Footer({ onNavigate }: FooterProps) {
-  const handleScrollTo = (id: string) => {
-    onNavigate('home');
-    setTimeout(() => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-  };
-
   const quickLinks = [
-    { label: 'Campus Home', id: 'home' },
-    { label: 'Academic Programs', id: 'courses' },
-    { label: 'System Features', id: 'features' },
-    { label: 'LMS Timeline', id: 'about' },
-    { label: 'Student Testimonials', id: 'testimonials' },
+    { label: 'Campus Home', view: 'home' as ViewState },
+    { label: 'Academic Programs', view: 'courses' as ViewState },
+    { label: 'System Features', view: 'features' as ViewState },
+    { label: 'LMS Timeline', view: 'about' as ViewState },
+    { label: 'Student Testimonials', view: 'testimonials' as ViewState },
   ];
 
   const popularPrograms = [
-    { label: 'Web Development', id: 'courses' },
-    { label: 'Python Essentials', id: 'courses' },
-    { label: 'Cloud & DevOps', id: 'courses' },
-    { label: 'UI/UX Masterclass', id: 'courses' },
-    { label: 'Cybersecurity', id: 'courses' },
+    { label: 'Web Development', view: 'courses' as ViewState },
+    { label: 'Python Essentials', view: 'courses' as ViewState },
+    { label: 'Cloud & DevOps', view: 'courses' as ViewState },
+    { label: 'UI/UX Masterclass', view: 'courses' as ViewState },
+    { label: 'Cybersecurity', view: 'courses' as ViewState },
   ];
 
   return (
@@ -41,7 +31,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           
           {/* Brand Col */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => handleScrollTo('home')}>
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => onNavigate('home')}>
               <div className="p-2 bg-white/5 rounded-xl text-[#41B883]">
                 <GraduationCap className="w-6 h-6" />
               </div>
@@ -78,8 +68,8 @@ export default function Footer({ onNavigate }: FooterProps) {
               {quickLinks.map((link) => (
                 <li key={link.label}>
                   <button
-                    onClick={() => handleScrollTo(link.id)}
-                    className="hover:text-[#41B883] transition-colors font-medium hover:underline text-left"
+                    onClick={() => onNavigate(link.view)}
+                    className="hover:text-[#41B883] transition-colors font-medium hover:underline text-left cursor-pointer"
                   >
                     {link.label}
                   </button>
@@ -95,8 +85,8 @@ export default function Footer({ onNavigate }: FooterProps) {
               {popularPrograms.map((prog, idx) => (
                 <li key={idx}>
                   <button
-                    onClick={() => handleScrollTo(prog.id)}
-                    className="hover:text-[#41B883] transition-colors font-medium hover:underline text-left text-gray-400"
+                    onClick={() => onNavigate(prog.view)}
+                    className="hover:text-[#41B883] transition-colors font-medium hover:underline text-left text-gray-400 cursor-pointer"
                   >
                     {prog.label}
                   </button>

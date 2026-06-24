@@ -40,19 +40,9 @@ export default function Navbar({
     { label: 'Contact', view: 'contact' as ViewState, href: '#contact' },
   ];
 
-  const handleItemClick = (view: ViewState, href: string) => {
+  const handleItemClick = (view: ViewState) => {
     setIsMobileMenuOpen(false);
     onNavigate(view);
-    
-    // If navigating back to homepage, scroll to the corresponding anchor
-    if (view === 'home' || view === 'courses' || view === 'about' || view === 'features' || view === 'testimonials' || view === 'contact') {
-      setTimeout(() => {
-        const element = document.getElementById(href.replace('#', ''));
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
   };
 
   return (
@@ -60,7 +50,7 @@ export default function Navbar({
       id="main-header"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-gray-100/50'
+          ? 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-md border-b border-gray-100/50'
           : 'bg-transparent'
       }`}
     >
@@ -69,7 +59,7 @@ export default function Navbar({
           
           {/* Logo */}
           <div 
-            onClick={() => handleItemClick('home', '#home')}
+            onClick={() => handleItemClick('home')}
             className="flex items-center space-x-2 cursor-pointer group"
           >
             <div className="p-2 bg-[#13294B] rounded-xl text-[#41B883] transition-transform duration-300 group-hover:scale-105">
@@ -83,12 +73,14 @@ export default function Navbar({
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
-              const isActive = currentView === 'home' && window.location.hash === item.href;
+              const isActive = currentView === item.view;
               return (
                 <button
                   key={item.label}
-                  onClick={() => handleItemClick('home', item.href)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-[#1E4F8A] transition-colors relative"
+                  onClick={() => handleItemClick(item.view)}
+                  className={`px-4 py-2 text-sm font-semibold transition-colors relative ${
+                    isActive ? 'text-[#1E4F8A]' : 'text-gray-600 hover:text-[#1E4F8A]'
+                  }`}
                 >
                   {item.label}
                   {isActive && (
@@ -193,8 +185,12 @@ export default function Navbar({
               {navItems.map((item) => (
                 <button
                   key={item.label}
-                  onClick={() => handleItemClick('home', item.href)}
-                  className="block w-full text-left px-4 py-3 rounded-lg text-base font-medium text-gray-700 hover:bg-gray-50 hover:text-[#13294B] transition-colors"
+                  onClick={() => handleItemClick(item.view)}
+                  className={`block w-full text-left px-4 py-3 rounded-lg text-base font-semibold transition-colors ${
+                    currentView === item.view
+                      ? 'bg-gray-100 text-[#13294B]'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-[#13294B]'
+                  }`}
                 >
                   {item.label}
                 </button>
