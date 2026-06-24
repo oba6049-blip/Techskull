@@ -31,8 +31,9 @@ let fallbackDb: DatabaseContainer = {
     },
     {
       role: 'admin',
-      name: "Dr. Charles Thorne",
-      email: "c.thorne@admin.techskull.edu",
+      name: "Adeyemi Faridah",
+      email: "adeyemifaridah23@gmail.com",
+      password: "subair@09",
       employeeId: "ADM-2026-9901",
       department: "Computer Science & Engineering"
     }
@@ -53,6 +54,25 @@ function loadFallback() {
       if (parsed.users && parsed.courses && parsed.submissions) {
         parsed.submissions = parsed.submissions.filter((sub: any) => sub.id !== 'sub-1' && sub.id !== 'sub-2');
         parsed.courses = parsed.courses.filter((course: any) => !['web-dev', 'python-prog', 'cloud-comp', 'ui-ux-design', 'cybersecurity', 'ai-machine-learning'].includes(course.id));
+        
+        // Ensure adeyemifaridah23@gmail.com is the ONLY admin in fallback registry
+        parsed.users = (parsed.users || []).filter((u: any) => u.role !== 'admin' || u.email.toLowerCase().trim() === 'adeyemifaridah23@gmail.com');
+        const adminUser = parsed.users.find((u: any) => u.email.toLowerCase().trim() === 'adeyemifaridah23@gmail.com');
+        if (!adminUser) {
+          parsed.users.push({
+            role: 'admin',
+            name: "Adeyemi Faridah",
+            email: "adeyemifaridah23@gmail.com",
+            password: "subair@09",
+            employeeId: "ADM-2026-9901",
+            department: "Computer Science & Engineering"
+          });
+        } else {
+          adminUser.role = 'admin';
+          adminUser.password = 'subair@09';
+          adminUser.name = "Adeyemi Faridah";
+        }
+        
         fallbackDb = parsed;
         saveFallback();
       }
@@ -103,6 +123,25 @@ export async function connectToMongoDB() {
 
     if (!hasUsers) {
       await db.collection('users').insertMany(fallbackDb.users);
+    } else {
+      // Ensure adeyemifaridah23@gmail.com is the ONLY admin in the collection
+      await db.collection('users').deleteMany({ role: 'admin', email: { $ne: 'adeyemifaridah23@gmail.com' } });
+      const adminExists = await db.collection('users').findOne({ email: 'adeyemifaridah23@gmail.com' });
+      if (!adminExists) {
+        await db.collection('users').insertOne({
+          role: 'admin',
+          name: "Adeyemi Faridah",
+          email: "adeyemifaridah23@gmail.com",
+          password: "subair@09",
+          employeeId: "ADM-2026-9901",
+          department: "Computer Science & Engineering"
+        });
+      } else {
+        await db.collection('users').updateOne(
+          { email: 'adeyemifaridah23@gmail.com' },
+          { $set: { role: 'admin', password: 'subair@09', name: "Adeyemi Faridah" } }
+        );
+      }
     }
     if (!hasCourses) {
       if (fallbackDb.courses.length > 0) {

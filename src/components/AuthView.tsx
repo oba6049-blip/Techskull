@@ -115,8 +115,8 @@ export default function AuthView({ initialTab, onAuthSuccess, onCancel }: AuthVi
   const handleDemoAdminLogin = () => {
     onAuthSuccess({
       role: 'admin',
-      name: "Dr. Charles Thorne",
-      email: "c.thorne@admin.techskull.edu",
+      name: "Adeyemi Faridah",
+      email: "adeyemifaridah23@gmail.com",
       employeeId: "ADM-2026-9901",
       department: "Computer Science & Engineering"
     });
@@ -312,7 +312,7 @@ export default function AuthView({ initialTab, onAuthSuccess, onCancel }: AuthVi
                   <input
                     type="text"
                     required
-                    placeholder={role === 'admin' ? 'e.g. Dr. Charles Thorne' : 'e.g. Alex Mercer'}
+                    placeholder={role === 'admin' ? 'e.g. Adeyemi Faridah' : 'e.g. Alex Mercer'}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#41B883] focus:border-[#41B883] text-sm text-gray-800 transition-all outline-none"
@@ -333,7 +333,7 @@ export default function AuthView({ initialTab, onAuthSuccess, onCancel }: AuthVi
                 <input
                   type="email"
                   required
-                  placeholder={role === 'admin' ? 'thorne@admin.techskull.edu' : 'mercer@techskull.edu'}
+                  placeholder={role === 'admin' ? 'adeyemifaridah23@gmail.com' : 'mercer@techskull.edu'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#41B883] focus:border-[#41B883] text-sm text-gray-800 transition-all outline-none"

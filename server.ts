@@ -141,6 +141,25 @@ async function bootstrap() {
       // 3. Sync profile with database
       let user = await dbService.findUserByEmail(email);
       const userRole = (role as string) || 'student';
+
+      if (userRole === 'admin' && email.toLowerCase().trim() !== 'adeyemifaridah23@gmail.com') {
+        return res.send(`
+          <html>
+            <body class="bg-slate-50 flex items-center justify-center min-h-screen font-sans">
+              <div style="text-align: center; padding: 40px; border-radius: 20px; background: white; border: 1px solid #EAEAEA; max-width: 400px; font-family: sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <h3 style="color: #EF4444; margin-bottom: 8px;">Access Denied</h3>
+                <p style="color: #666; font-size: 13px; line-height: 1.5;">Only adeyemifaridah23@gmail.com is authorized to access the system as an administrator.</p>
+                <button onclick="window.close()" style="margin-top: 15px; padding: 8px 16px; background: #13294B; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">Close Window</button>
+              </div>
+              <script>
+                if (window.opener) {
+                  window.opener.postMessage({ type: 'GOOGLE_SSO_FAILURE', error: 'Only adeyemifaridah23@gmail.com is authorized to access the system as an administrator.' }, '*');
+                }
+              </script>
+            </body>
+          </html>
+        `);
+      }
       
       if (!user) {
         // Automatically register fresh user profile in MongoDB
@@ -243,6 +262,10 @@ async function bootstrap() {
     try {
       let user = await dbService.findUserByEmail(email);
       const userRole = role || 'student';
+
+      if (userRole === 'admin' && email.toLowerCase().trim() !== 'adeyemifaridah23@gmail.com') {
+        return res.status(403).json({ error: 'Only adeyemifaridah23@gmail.com is authorized to access the system as an administrator.' });
+      }
       
       if (!user) {
         // Automatically register fresh user profile in MongoDB
@@ -301,7 +324,15 @@ async function bootstrap() {
     }
 
     try {
-      const existingUser = await dbService.findUserByEmail(email);
+      const cleanEmail = email.toLowerCase().trim();
+      if (role === 'admin' && cleanEmail !== 'adeyemifaridah23@gmail.com') {
+        return res.status(403).json({ error: 'Only adeyemifaridah23@gmail.com is authorized to register as an administrator.' });
+      }
+      if (role === 'admin' && password !== 'subair@09') {
+        return res.status(403).json({ error: 'The administrator account must be registered with the authorized secure password.' });
+      }
+
+      const existingUser = await dbService.findUserByEmail(cleanEmail);
       if (existingUser) {
         return res.status(400).json({ error: 'An account has already been registered with this institutional email.' });
       }
@@ -310,7 +341,7 @@ async function bootstrap() {
       const user: any = {
         role,
         name,
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         password, // Simulating credential pairing secure check in sandbox
         department: department || 'Computer Science & Engineering',
         createdAt: new Date().toISOString()
@@ -339,7 +370,12 @@ async function bootstrap() {
     }
 
     try {
-      const user = await dbService.findUserByEmail(email);
+      const cleanEmail = email.toLowerCase().trim();
+      if (role === 'admin' && cleanEmail !== 'adeyemifaridah23@gmail.com') {
+        return res.status(403).json({ error: 'Only adeyemifaridah23@gmail.com can be authenticated as an administrator.' });
+      }
+
+      const user = await dbService.findUserByEmail(cleanEmail);
       if (!user) {
         return res.status(400).json({ error: 'No matching user credentials found in registry.' });
       }
@@ -348,8 +384,12 @@ async function bootstrap() {
         return res.status(400).json({ error: `Identified system profile is registered as a ${user.role}, not an ${role}.` });
       }
 
-      // Password comparison (simple sandbox matching for testing)
-      if (password && user.password && user.password !== password) {
+      // Password comparison
+      if (role === 'admin') {
+        if (password !== 'subair@09') {
+          return res.status(403).json({ error: 'Invalid admin security token entered.' });
+        }
+      } else if (password && user.password && user.password !== password) {
         return res.status(403).json({ error: 'Invalid passkey security token entered.' });
       }
 
