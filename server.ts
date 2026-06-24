@@ -140,11 +140,11 @@ async function bootstrap() {
 
       // 3. Sync profile with database
       let user = await dbService.findUserByEmail(email);
+      const userRole = (role as string) || 'student';
       
       if (!user) {
         // Automatically register fresh user profile in MongoDB
         const randomNum = Math.floor(1000 + Math.random() * 9000);
-        const userRole = (role as string) || 'student';
         
         user = {
           role: userRole,
@@ -163,6 +163,26 @@ async function bootstrap() {
         }
 
         await dbService.createUser(user);
+      } else {
+        // Update user role to match selected Google SSO role
+        if (user.role !== userRole) {
+          user.role = userRole;
+          const randomNum = Math.floor(1000 + Math.random() * 9000);
+          if (userRole === 'admin' && !user.employeeId) {
+            user.employeeId = `ADM-GGL-${randomNum}`;
+          } else if (userRole === 'student' && !user.studentId) {
+            user.studentId = `TS-GGL-${randomNum}`;
+            if (!user.registeredCourses) user.registeredCourses = [];
+            if (!user.completedAssignments) user.completedAssignments = {};
+          }
+          await dbService.updateUser(email, {
+            role: user.role,
+            employeeId: user.employeeId || null,
+            studentId: user.studentId || null,
+            registeredCourses: user.registeredCourses || [],
+            completedAssignments: user.completedAssignments || {}
+          });
+        }
       }
 
       // 4. Send user context back to application parent frame
@@ -222,11 +242,11 @@ async function bootstrap() {
 
     try {
       let user = await dbService.findUserByEmail(email);
+      const userRole = role || 'student';
       
       if (!user) {
         // Automatically register fresh user profile in MongoDB
         const randomNum = Math.floor(1000 + Math.random() * 9000);
-        const userRole = role || 'student';
         
         user = {
           role: userRole,
@@ -245,6 +265,26 @@ async function bootstrap() {
         }
 
         await dbService.createUser(user);
+      } else {
+        // Update user role to match selected Google SSO role
+        if (user.role !== userRole) {
+          user.role = userRole;
+          const randomNum = Math.floor(1000 + Math.random() * 9000);
+          if (userRole === 'admin' && !user.employeeId) {
+            user.employeeId = `ADM-GGL-${randomNum}`;
+          } else if (userRole === 'student' && !user.studentId) {
+            user.studentId = `TS-GGL-${randomNum}`;
+            if (!user.registeredCourses) user.registeredCourses = [];
+            if (!user.completedAssignments) user.completedAssignments = {};
+          }
+          await dbService.updateUser(email, {
+            role: user.role,
+            employeeId: user.employeeId || null,
+            studentId: user.studentId || null,
+            registeredCourses: user.registeredCourses || [],
+            completedAssignments: user.completedAssignments || {}
+          });
+        }
       }
 
       res.json({ success: true, user });
